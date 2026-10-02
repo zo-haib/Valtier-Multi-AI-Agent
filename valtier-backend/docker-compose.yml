@@ -1,0 +1,40 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: valtier
+      POSTGRES_PASSWORD: valtier
+      POSTGRES_DB: valtier
+    volumes:
+      - valtier_db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U valtier -d valtier"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://valtier:valtier@db:5432/valtier
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    volumes:
+      - valtier_uploads:/app/uploads
+      - valtier_vector_store:/app/data/vector_store
+
+volumes:
+  valtier_db_data:
+  valtier_uploads:
+  valtier_vector_store:
